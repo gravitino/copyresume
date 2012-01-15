@@ -1,8 +1,10 @@
+#!/usr/bin/env python
+
 from sys import argv
 from os  import path
 
-# size of chunks for read write actions
-chunkSize = 2**20
+# size of chunks for read write actions and overlap
+chunkSize, overlap = 2**20, 2**20
 
 # check for correct call
 if len(argv) != 3:
@@ -25,21 +27,16 @@ else:
 with open (origin, 'rb') as originFile:
     with open(target, 'ab+') as targetFile:
         
-        print originSize, targetSize
+        print "original size: %s \t target size: %s" % (originSize, targetSize)
 
         if targetSize > 0:
-            originFile.seek(targetSize - 1)
-            targetFile.seek(targetSize - 1)
-            if originFile.read(1) != targetFile.read(1):
-                raise Exception ("files do not match at resuming position")
-
-        if targetSize > 100:
-            originFile.seek(targetSize - 101)
-            targetFile.seek(targetSize - 101)
-            if originFile.read(101) != targetFile.read(101):
+            checkArea = min(overlap, targetSize)
+            originFile.seek(targetSize - checkArea)
+            targetFile.seek(targetSize - checkArea)
+            if originFile.read(checkArea) != targetFile.read(checkArea):
                 raise Exception ("files do not match at resuming position")
 
         while targetSize < originSize:        
             targetFile.write(originFile.read(chunkSize))
-            print "%2.2f" % (float(targetSize) / float(originSize) * 100)
+            print "\r%2.2f" % (float(targetSize) / float(originSize) * 100),
             targetSize += chunkSize
