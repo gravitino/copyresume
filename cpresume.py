@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-from sys import argv
-from os  import path
+from sys  import argv # parse arguments
+from os   import path # read file size
+from time import time # estimation of time left
 
 # size of chunks for read write actions and overlap
 chunkSize, overlap = 2**20, 2**20
@@ -24,19 +25,36 @@ else:
     originSize = path.getsize(origin)
     targetSize = path.getsize(target)
 
+# open both files
 with open (origin, 'rb') as originFile:
     with open(target, 'ab+') as targetFile:
         
-        print "original size: %s \t target size: %s" % (originSize, targetSize)
-
+        # if target is not empty check overlap
         if targetSize > 0:
+
+            # calculate maximal overlay region and set file handler
             checkArea = min(overlap, targetSize)
             originFile.seek(targetSize - checkArea)
             targetFile.seek(targetSize - checkArea)
+            
             if originFile.read(checkArea) != targetFile.read(checkArea):
                 raise Exception ("files do not match at resuming position")
 
-        while targetSize < originSize:        
+        # remember time and targetSize before copying
+        startTime, currentSize = time(), targetSize
+
+        # copy, copy, copy
+        while currentSize < originSize:        
+            
+            # finally copy
             targetFile.write(originFile.read(chunkSize))
-            print "\r%2.2f" % (float(targetSize) / float(originSize) * 100),
-            targetSize += chunkSize
+            currentSize += chunkSize
+            
+            # calculate output
+            tau = max(0, (time() - startTime) *      \
+                      (originSize - currentSize) /   \
+                      (currentSize - targetSize))
+            per = 100.0 * currentSize / originSize
+
+            # and print it
+            print "\r%2.2f percent copied\t %2.2f seconds left" % (per, tau),
