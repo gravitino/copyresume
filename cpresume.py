@@ -5,7 +5,7 @@ from os   import path # read file size
 from time import time # estimation of time left
 
 # size of chunks for read write actions and overlap
-chunkSize, overlap = 2**20, 2**20
+chunkSize, overlap = 2**10, 2**20
 
 # check for correct call
 if len(argv) != 3:
@@ -51,10 +51,11 @@ with open (origin, 'rb') as originFile:
             currentSize += chunkSize
             
             # calculate output
-            tau = max(0, (time() - startTime) *      \
-                      (originSize - currentSize) /   \
-                      (currentSize - targetSize))
+            vel = (currentSize - targetSize) / (time() - startTime)
+            tau = max(0, (originSize - currentSize) / vel)
             per = 100.0 * currentSize / originSize
 
             # and print it
-            print "\r%2.2f percent copied\t %2.2f seconds left" % (per, tau),
+            print "\r%2.2f percent copied"  % per,        \
+                  "\t%2.0f minutes left"    % (tau / 60), \
+                  "\t%2.2f kiB/s bandwidth" % (vel / 1024),
